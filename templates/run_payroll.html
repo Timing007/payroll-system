@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Run Payroll{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-play-circle me-2 text-success"></i>Run Monthly Payroll</h2>
+</div>
+
+<div class="card mb-4" style="max-width: 540px;">
+  <div class="card-body">
+    <p class="text-muted mb-3">
+      This will process salaries for <strong>all active employees</strong>, generate payslips, and log the results.
+    </p>
+    <form method="POST" action="/payroll/run"
+          onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').innerHTML='<span class=\'spinner-border spinner-border-sm me-1\'></span> Processing…';">
+      <button type="submit" class="btn btn-success btn-lg">
+        <i class="bi bi-play-fill me-1"></i>Run Payroll
+      </button>
+    </form>
+  </div>
+</div>
+
+{% if results is not none %}
+  {% if results %}
+  <div class="card">
+    <div class="card-header bg-white d-flex align-items-center justify-content-between">
+      <span class="fw-semibold"><i class="bi bi-check-circle-fill text-success me-1"></i>Payroll Results</span>
+      <span class="badge bg-success">{{ results | length }} employees processed</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Emp ID</th>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Type</th>
+            <th class="text-end">Net Pay</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in results %}
+          <tr>
+            <td class="fw-semibold text-primary">{{ r.emp_id }}</td>
+            <td>{{ r.emp_name }}</td>
+            <td><span class="badge bg-secondary">{{ r.department }}</span></td>
+            <td>
+              {% if r.emp_type == 'full_time' %}
+                <span class="badge bg-success">Full Time</span>
+              {% elif r.emp_type == 'part_time' %}
+                <span class="badge bg-info text-dark">Part Time</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Contract</span>
+              {% endif %}
+            </td>
+            <td class="text-end fw-bold">₹{{ "{:,.2f}".format(r.net_pay | float) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <td colspan="4" class="fw-semibold text-end">Total Payout</td>
+            <td class="text-end fw-bold text-success fs-6">
+              ₹{{ "{:,.2f}".format(results | sum(attribute='net_pay') | float) }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  <div class="mt-3">
+    <a href="/payslips" class="btn btn-outline-primary"><i class="bi bi-file-text me-1"></i>View Generated Payslips</a>
+  </div>
+  {% else %}
+  <div class="alert alert-warning">No employees found to process.</div>
+  {% endif %}
+{% endif %}
+{% endblock %}

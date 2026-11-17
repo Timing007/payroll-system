@@ -1,0 +1,520 @@
+{% extends "base.html" %}
+{% block title %}Payroll Analytics & Statistics{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  .kpi-card {
+    border-radius: 0.75rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .kpi-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+  }
+  .chart-card {
+    border-radius: 0.75rem;
+    min-height: 380px;
+  }
+  .stat-badge {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.65rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h2 class="fw-bold mb-1"><i class="bi bi-graph-up me-2 text-primary"></i>Payroll Analytics & Statistics</h2>
+    <p class="text-muted mb-0">Comprehensive workforce intelligence, compensation metrics, and department breakdowns.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/payroll/run" class="btn btn-outline-success"><i class="bi bi-play-fill me-1"></i>Run Payroll</a>
+    <a href="/employees" class="btn btn-outline-primary"><i class="bi bi-people me-1"></i>View Directory</a>
+    <button onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer me-1"></i>Print Report</button>
+  </div>
+</div>
+
+<!-- Row 1: Executive KPI Cards -->
+<div class="row g-3 mb-4">
+  <!-- Total Employees -->
+  <div class="col-sm-6 col-lg-4 col-xl-2">
+    <div class="card kpi-card h-100 bg-white">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small fw-semibold">HEADCOUNT</span>
+          <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-people-fill fs-5"></i></div>
+        </div>
+        <h3 class="fw-bold mb-0 text-dark">{{ "{:,}".format(analytics.kpis.total_employees) }}</h3>
+        <small class="text-muted">Across 6 Departments</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Net Payroll -->
+  <div class="col-sm-6 col-lg-4 col-xl-2">
+    <div class="card kpi-card h-100 bg-white">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small fw-semibold">NET PAYROLL</span>
+          <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-cash-stack fs-5"></i></div>
+        </div>
+        <h4 class="fw-bold mb-0 text-success">₹{{ "{:,.0f}".format(analytics.kpis.total_net) }}</h4>
+        <small class="text-muted">Monthly Take-Home</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Gross Payroll -->
+  <div class="col-sm-6 col-lg-4 col-xl-2">
+    <div class="card kpi-card h-100 bg-white">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small fw-semibold">GROSS COST</span>
+          <div class="kpi-icon bg-info-subtle text-info"><i class="bi bi-wallet2 fs-5"></i></div>
+        </div>
+        <h4 class="fw-bold mb-0 text-info">₹{{ "{:,.0f}".format(analytics.kpis.total_gross) }}</h4>
+        <small class="text-muted">Total Cost to Org</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Total Deductions & Taxes -->
+  <div class="col-sm-6 col-lg-4 col-xl-2">
+    <div class="card kpi-card h-100 bg-white">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small fw-semibold">DEDUCTIONS</span>
+          <div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-receipt-cutoff fs-5"></i></div>
+        </div>
+        <h4 class="fw-bold mb-0 text-danger">₹{{ "{:,.0f}".format(analytics.kpis.total_deductions) }}</h4>
+        <small class="text-muted">Tax + PF + TDS</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Average Net Pay -->
+  <div class="col-sm-6 col-lg-4 col-xl-2">
+    <div class="card kpi-card h-100 bg-white">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small fw-semibold">AVG NET PAY</span>
+          <div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-calculator fs-5"></i></div>
+        </div>
+        <h4 class="fw-bold mb-0 text-dark">₹{{ "{:,.0f}".format(analytics.kpis.avg_net) }}</h4>
+        <small class="text-muted">Median: ₹{{ "{:,.0f}".format(analytics.kpis.median_net) }}</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overtime Disbursed -->
+  <div class="col-sm-6 col-lg-4 col-xl-2">
+    <div class="card kpi-card h-100 bg-white">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="text-muted small fw-semibold">OVERTIME</span>
+          <div class="kpi-icon bg-secondary-subtle text-secondary"><i class="bi bi-clock-history fs-5"></i></div>
+        </div>
+        <h4 class="fw-bold mb-0 text-dark">₹{{ "{:,.0f}".format(analytics.kpis.total_overtime_pay) }}</h4>
+        <small class="text-muted">{{ "{:,.0f}".format(analytics.kpis.total_overtime_hours) }} OT Hours (1.5x)</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: Interactive Charts -->
+<div class="row g-4 mb-4">
+  <!-- Chart 1: Department Net Payroll Expense -->
+  <div class="col-lg-7">
+    <div class="card chart-card bg-white shadow-sm p-3">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <div>
+          <h5 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Department Payroll Expenditure</h5>
+          <small class="text-muted">Monthly Net Salary & Project Fees by Department</small>
+        </div>
+        <span class="badge bg-primary-subtle text-primary">₹ Net Total</span>
+      </div>
+      <div class="card-body">
+        <canvas id="deptExpenseChart" height="230"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 2: Workforce Composition -->
+  <div class="col-lg-5">
+    <div class="card chart-card bg-white shadow-sm p-3">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <div>
+          <h5 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill me-2 text-info"></i>Workforce Composition</h5>
+          <small class="text-muted">Headcount by Employment Model</small>
+        </div>
+        <span class="badge bg-info-subtle text-info">1,000 Total</span>
+      </div>
+      <div class="card-body d-flex align-items-center justify-content-center">
+        <div style="width: 260px; max-width: 100%;">
+          <canvas id="empTypeChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 3: Department Headcount & Salary Distribution Charts -->
+<div class="row g-4 mb-4">
+  <!-- Chart 3: Department Headcount -->
+  <div class="col-lg-6">
+    <div class="card chart-card bg-white shadow-sm p-3">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <div>
+          <h5 class="fw-bold mb-0"><i class="bi bi-diagram-3-fill me-2 text-warning"></i>Headcount by Department</h5>
+          <small class="text-muted">Distribution of 1,000 employees</small>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="deptHeadcountChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 4: Salary Band Distribution -->
+  <div class="col-lg-6">
+    <div class="card chart-card bg-white shadow-sm p-3">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center pb-0">
+        <div>
+          <h5 class="fw-bold mb-0"><i class="bi bi-bar-chart-steps me-2 text-success"></i>Salary Distribution Bands</h5>
+          <small class="text-muted">Frequency histogram of take-home pay</small>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="salaryBandChart" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 4: Detailed Department Analysis Table -->
+<div class="card shadow-sm mb-4">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="fw-bold mb-0"><i class="bi bi-table me-2 text-primary"></i>Department-by-Department Deep Dive</h5>
+      <small class="text-muted">Full headcount and financial breakdowns across all 6 departments</small>
+    </div>
+    <span class="badge bg-secondary">{{ analytics.departments | length }} Departments</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Department</th>
+          <th class="text-center">Headcount</th>
+          <th class="text-center">% Workforce</th>
+          <th class="text-end">Total Gross</th>
+          <th class="text-end">Total Net</th>
+          <th class="text-end">Avg Net Pay</th>
+          <th class="text-end">% Org Payroll</th>
+          <th class="text-center">FT / PT / Contract</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in analytics.departments %}
+        <tr>
+          <td class="fw-bold text-dark">
+            <i class="bi bi-building me-1 text-secondary"></i>{{ d.department }}
+          </td>
+          <td class="text-center fw-semibold">{{ d.count }}</td>
+          <td class="text-center">
+            <span class="badge bg-light text-dark border">{{ "{:.1f}%".format(d.headcount_pct) }}</span>
+          </td>
+          <td class="text-end">₹{{ "{:,.2f}".format(d.total_gross) }}</td>
+          <td class="text-end fw-bold text-success">₹{{ "{:,.2f}".format(d.total_net) }}</td>
+          <td class="text-end fw-semibold">₹{{ "{:,.2f}".format(d.avg_net) }}</td>
+          <td class="text-end">
+            <div class="d-flex align-items-center justify-content-end gap-2">
+              <span class="small fw-semibold">{{ "{:.1f}%".format(d.net_payroll_pct) }}</span>
+              <div class="progress" style="width: 60px; height: 6px;">
+                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ d.net_payroll_pct }}%"></div>
+              </div>
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="badge bg-success-subtle text-success stat-badge" title="Full Time">{{ d.full_time_count }} FT</span>
+            <span class="badge bg-info-subtle text-info stat-badge" title="Part Time">{{ d.part_time_count }} PT</span>
+            <span class="badge bg-warning-subtle text-warning stat-badge" title="Contract">{{ d.contract_count }} CT</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light fw-bold">
+        <tr>
+          <td>Total / Portfolio Average</td>
+          <td class="text-center">{{ analytics.kpis.total_employees }}</td>
+          <td class="text-center">100.0%</td>
+          <td class="text-end">₹{{ "{:,.2f}".format(analytics.kpis.total_gross) }}</td>
+          <td class="text-end text-success">₹{{ "{:,.2f}".format(analytics.kpis.total_net) }}</td>
+          <td class="text-end">₹{{ "{:,.2f}".format(analytics.kpis.avg_net) }}</td>
+          <td class="text-end">100.0%</td>
+          <td class="text-center">—</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<!-- Row 5: Statutory Breakdown & Top Earners -->
+<div class="row g-4">
+  <!-- Statutory Breakdown -->
+  <div class="col-lg-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0"><i class="bi bi-shield-check me-2 text-danger"></i>Statutory Taxes & Deductions</h5>
+        <small class="text-muted">Total withholdings and employer disbursements</small>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush mb-3">
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+            <div>
+              <i class="bi bi-file-earmark-lock me-2 text-danger"></i><strong>Income Tax Withheld</strong>
+              <div class="small text-muted">Salaried employees (TDS on salary)</div>
+            </div>
+            <span class="fw-bold text-dark">₹{{ "{:,.2f}".format(analytics.statutory_breakdown['Income Tax']) }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+            <div>
+              <i class="bi bi-piggy-bank me-2 text-primary"></i><strong>Provident Fund (PF)</strong>
+              <div class="small text-muted">Statutory retirement fund contributions</div>
+            </div>
+            <span class="fw-bold text-dark">₹{{ "{:,.2f}".format(analytics.statutory_breakdown['Provident Fund (PF)']) }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+            <div>
+              <i class="bi bi-briefcase me-2 text-warning"></i><strong>Contractor TDS (10%)</strong>
+              <div class="small text-muted">Section 194J professional fees deduction</div>
+            </div>
+            <span class="fw-bold text-dark">₹{{ "{:,.2f}".format(analytics.statutory_breakdown['TDS (Contractors)']) }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-light-subtle p-2 rounded mt-2">
+            <div>
+              <i class="bi bi-receipt me-2 text-danger"></i><strong>Total Withholdings & Taxes</strong>
+            </div>
+            <span class="fw-bold text-danger fs-6">₹{{ "{:,.2f}".format(analytics.statutory_breakdown['Total Statutory Deductions']) }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-light-subtle p-2 rounded mt-2">
+            <div>
+              <i class="bi bi-gift me-2 text-success"></i><strong>Total Allowances (HRA + DA)</strong>
+              <div class="small text-muted">Housing & living support disbursed</div>
+            </div>
+            <span class="fw-bold text-success fs-6">₹{{ "{:,.2f}".format(analytics.statutory_breakdown['Total Allowances (HRA + DA)']) }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top 10 Earners Leaderboard -->
+  <div class="col-lg-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="fw-bold mb-0"><i class="bi bi-trophy me-2 text-warning"></i>Top 10 Highest Compensated Profiles</h5>
+          <small class="text-muted">Highest take-home salaries and milestone project deliverables</small>
+        </div>
+        <span class="badge bg-warning text-dark">Leaderboard</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Rank</th>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Type</th>
+              <th class="text-end">Net Pay</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for earner in analytics.top_earners %}
+            <tr>
+              <td class="fw-bold text-muted">#{{ loop.index }}</td>
+              <td>
+                <span class="fw-bold text-dark">{{ earner.name }}</span>
+                <span class="text-muted small ms-1">({{ earner.emp_id }})</span>
+              </td>
+              <td><span class="badge bg-secondary">{{ earner.department }}</span></td>
+              <td>
+                {% if earner.emp_type == 'full_time' %}
+                  <span class="badge bg-success">Full Time</span>
+                {% elif earner.emp_type == 'part_time' %}
+                  <span class="badge bg-info text-dark">Part Time</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Contract</span>
+                {% endif %}
+              </td>
+              <td class="text-end fw-bold text-success">₹{{ "{:,.2f}".format(earner.net_pay) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Color palette
+  const colors = {
+    primary: '#0d6efd',
+    success: '#198754',
+    warning: '#ffc107',
+    info: '#0dcaf0',
+    danger: '#dc3545',
+    purple: '#6f42c1',
+    teal: '#20c997',
+    orange: '#fd7e14'
+  };
+
+  // 1. Department Net Expense Bar Chart
+  const deptLabels = {{ analytics.departments | map(attribute='department') | list | tojson }};
+  const deptNetData = {{ analytics.departments | map(attribute='total_net') | list | tojson }};
+
+  new Chart(document.getElementById('deptExpenseChart'), {
+    type: 'bar',
+    data: {
+      labels: deptLabels,
+      datasets: [{
+        label: 'Net Payroll (₹)',
+        data: deptNetData,
+        backgroundColor: [
+          '#0d6efd', '#198754', '#0dcaf0', '#fd7e14', '#6f42c1', '#20c997'
+        ],
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              return ' ₹ ' + ctx.raw.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(val) {
+              return '₹' + (val / 1000000).toFixed(1) + 'M';
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // 2. Workforce Composition Donut Chart
+  const typeCounts = [
+    {{ analytics.employment_types.full_time.count }},
+    {{ analytics.employment_types.part_time.count }},
+    {{ analytics.employment_types.contract.count }}
+  ];
+
+  new Chart(document.getElementById('empTypeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Full Time', 'Part Time', 'Contract'],
+      datasets: [{
+        data: typeCounts,
+        backgroundColor: ['#198754', '#0dcaf0', '#ffc107'],
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const total = typeCounts.reduce((a, b) => a + b, 0);
+              const pct = ((ctx.raw / total) * 100).toFixed(1);
+              return ` ${ctx.label}: ${ctx.raw} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // 3. Department Headcount Bar Chart
+  const deptCounts = {{ analytics.departments | map(attribute='count') | list | tojson }};
+
+  new Chart(document.getElementById('deptHeadcountChart'), {
+    type: 'bar',
+    data: {
+      labels: deptLabels,
+      datasets: [{
+        label: 'Headcount',
+        data: deptCounts,
+        backgroundColor: '#0d6efd',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { beginAtZero: true }
+      }
+    }
+  });
+
+  // 4. Salary Band Histogram
+  const bandLabels = {{ analytics.salary_bands.keys() | list | tojson }};
+  const bandValues = {{ analytics.salary_bands.values() | list | tojson }};
+
+  new Chart(document.getElementById('salaryBandChart'), {
+    type: 'bar',
+    data: {
+      labels: bandLabels,
+      datasets: [{
+        label: 'Employees in Band',
+        data: bandValues,
+        backgroundColor: '#20c997',
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>
+{% endblock %}

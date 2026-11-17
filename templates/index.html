@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h2>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+          <i class="bi bi-people-fill text-primary fs-3"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Total Employees</div>
+          <div class="fs-2 fw-bold">{{ total_employees }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+          <i class="bi bi-diagram-3-fill text-success fs-3"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Departments</div>
+          <div class="fs-2 fw-bold">{{ departments | length }}</div>
+          <div class="text-muted small">{{ departments | join(', ') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+          <i class="bi bi-calendar-check-fill text-warning fs-3"></i>
+        </div>
+        <div>
+          <div class="text-muted small">Last Payroll Run</div>
+          <div class="fs-5 fw-bold">{{ last_run_date if last_run_date else '—' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Department Payroll Chart -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-bar-chart-fill me-1 text-primary"></i>Department Net Pay (Last Run)
+      </div>
+      <div class="card-body">
+        {% if department_summary %}
+          {% set max_val = department_summary.values() | max %}
+          {% for dept, total in department_summary.items() %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <span class="fw-semibold">{{ dept }}</span>
+                <span class="text-muted">₹{{ "{:,.0f}".format(total) }}</span>
+              </div>
+              <div class="progress" style="height: 18px;">
+                <div class="progress-bar bg-primary" style="width: {{ (total / max_val * 100) | int }}%">
+                  {{ (total / max_val * 100) | int }}%
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted text-center py-3">No payroll data yet. <a href="/payroll/run">Run payroll</a> to see charts.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-clock-history me-1 text-primary"></i>Recent Payroll Logs
+      </div>
+      {% if recent_logs %}
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Employee</th>
+              <th>Dept</th>
+              <th class="text-end">Net Pay</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in recent_logs %}
+            <tr>
+              <td class="text-muted small">{{ log.run_date }}</td>
+              <td>{{ log.emp_name }}</td>
+              <td><span class="badge bg-secondary">{{ log.department }}</span></td>
+              <td class="text-end fw-semibold">₹{{ "{:,.0f}".format(log.net_pay | float) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="card-body text-muted text-center py-3">No recent logs found.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-3">
+  <div class="col-auto">
+    <a href="/analytics" class="btn btn-primary"><i class="bi bi-graph-up me-1"></i>View Analytics & Statistics</a>
+  </div>
+  <div class="col-auto">
+    <a href="/employees" class="btn btn-outline-primary"><i class="bi bi-people me-1"></i>Employee Directory</a>
+  </div>
+  <div class="col-auto">
+    <a href="/employees/add" class="btn btn-outline-secondary"><i class="bi bi-person-plus me-1"></i>Add Employee</a>
+  </div>
+  <div class="col-auto">
+    <a href="/payroll/run" class="btn btn-success"><i class="bi bi-play-circle me-1"></i>Run Payroll</a>
+  </div>
+  <div class="col-auto">
+    <a href="/payslips" class="btn btn-outline-secondary"><i class="bi bi-file-text me-1"></i>View Payslips</a>
+  </div>
+</div>
+{% endblock %}

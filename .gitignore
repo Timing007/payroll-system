@@ -1,0 +1,6 @@
+.vercel
+__pycache__/
+*.py[cod]
+.pytest_cache/
+output/payslips/*.txt
+*.log

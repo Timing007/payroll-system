@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Payslips{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-file-text me-2 text-primary"></i>Payslips</h2>
+  <span class="badge bg-primary fs-6">{{ files | length }} file(s)</span>
+</div>
+
+<div class="row g-4">
+  <!-- File list sidebar -->
+  <div class="col-md-4 col-lg-3">
+    <div class="card">
+      <div class="card-header bg-white fw-semibold small text-muted d-flex justify-content-between align-items-center">
+        <span>PAYSLIP FILES</span>
+        <span class="badge bg-light text-dark border">{{ files | length }}</span>
+      </div>
+      {% if files %}
+      <div class="p-2 border-bottom">
+        <input type="text" id="payslipSearch" class="form-control form-control-sm"
+          placeholder="Filter files (e.g. EMP0042)…" onkeyup="filterPayslips()">
+      </div>
+      <div class="list-group list-group-flush" id="payslipList" style="max-height: 550px; overflow-y: auto;">
+        {% for f in files %}
+        <a href="/payslips/{{ f }}"
+          class="list-group-item list-group-item-action d-flex align-items-center gap-2 payslip-item {% if filename == f %}active{% endif %}"
+          data-filename="{{ f | lower }}">
+          <i class="bi bi-file-earmark-text{% if filename == f %}-fill{% endif %}"></i>
+          <span class="text-truncate small">{{ f }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="card-body text-muted text-center py-4 small">
+        No payslips yet.<br>
+        <a href="/payroll/run" class="mt-2 d-inline-block">Run payroll</a> to generate them.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Payslip content panel -->
+  <div class="col-md-8 col-lg-9">
+    {% if content %}
+    <div class="card">
+      <div class="card-header bg-white d-flex align-items-center justify-content-between">
+        <span class="fw-semibold"><i class="bi bi-file-earmark-text me-1 text-primary"></i>{{ filename }}</span>
+        <a href="/payslips" class="btn btn-sm btn-outline-secondary"><i class="bi bi-x"></i> Close</a>
+      </div>
+      <div class="card-body">
+        <pre class="mb-0">{{ content }}</pre>
+      </div>
+    </div>
+    {% elif filename %}
+    <div class="alert alert-warning">Payslip file not found.</div>
+    {% else %}
+    <div class="card text-center py-5 text-muted">
+      <div class="card-body">
+        <i class="bi bi-file-earmark-text fs-1 d-block mb-2"></i>
+        <p>Select a payslip from the list to view its contents.</p>
+        {% if not files %}
+        <a href="/payroll/run" class="btn btn-success"><i class="bi bi-play-fill me-1"></i>Run Payroll</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function filterPayslips() {
+    const q = document.getElementById('payslipSearch').value.toLowerCase().trim();
+    const items = document.querySelectorAll('.payslip-item');
+    items.forEach(el => {
+      const name = el.getAttribute('data-filename');
+      if (!q || name.includes(q)) {
+        el.style.display = 'flex';
+      } else {
+        el.style.display = 'none';
+      }
+    });
+  }
+</script>
+{% endblock %}

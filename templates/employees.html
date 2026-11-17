@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Employee Directory{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h2 class="fw-bold mb-1"><i class="bi bi-people me-2 text-primary"></i>Employee Directory</h2>
+    <p class="text-muted mb-0">Managing <strong>{{ total_count }}</strong> employees across {{ all_departments | length }} departments</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="/analytics" class="btn btn-outline-info"><i class="bi bi-graph-up me-1"></i>Analytics</a>
+    <a href="/employees/add" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i>Add Employee</a>
+  </div>
+</div>
+
+<!-- Search & Filter Card -->
+<div class="card mb-4 bg-white shadow-sm">
+  <div class="card-body">
+    <form method="GET" action="/employees" class="row g-2 align-items-center">
+      <!-- Search Input -->
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="search" class="form-control" placeholder="Search by name or ID…" value="{{ search }}">
+        </div>
+      </div>
+
+      <!-- Department Filter -->
+      <div class="col-md-3">
+        <select name="dept" class="form-select">
+          <option value="">All Departments ({{ all_departments | length }})</option>
+          {% for d in all_departments %}
+          <option value="{{ d }}" {% if current_dept == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Type Filter -->
+      <div class="col-md-3">
+        <select name="type" class="form-select">
+          <option value="">All Employment Types</option>
+          <option value="full_time" {% if current_type == 'full_time' %}selected{% endif %}>Full Time</option>
+          <option value="part_time" {% if current_type == 'part_time' %}selected{% endif %}>Part Time</option>
+          <option value="contract" {% if current_type == 'contract' %}selected{% endif %}>Contract</option>
+        </select>
+      </div>
+
+      <!-- Per Page & Actions -->
+      <div class="col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+        {% if search or current_dept or current_type %}
+        <a href="/employees" class="btn btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Employees Table Card -->
+<div class="card shadow-sm bg-white">
+  <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <span class="fw-bold text-dark">Showing {{ employees | length }} of {{ filtered_count }} employees</span>
+      {% if filtered_count < total_count %}
+        <span class="badge bg-secondary-subtle text-secondary ms-2">Filtered from {{ total_count }} total</span>
+      {% endif %}
+    </div>
+    <div class="small text-muted">Page {{ page }} of {{ total_pages }}</div>
+  </div>
+  <div class="card-body p-0">
+    {% if employees %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Employee ID</th>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Employment Type</th>
+            <th>Compensation Terms</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in employees %}
+          <tr>
+            <td class="fw-semibold text-primary font-monospace">{{ emp.emp_id }}</td>
+            <td class="fw-semibold text-dark">{{ emp.name }}</td>
+            <td><span class="badge bg-secondary-subtle text-dark border">{{ emp.department }}</span></td>
+            <td>
+              {% if emp.emp_type == 'full_time' %}
+                <span class="badge bg-success-subtle text-success border border-success">Full Time</span>
+              {% elif emp.emp_type == 'part_time' %}
+                <span class="badge bg-info-subtle text-info-emphasis border border-info">Part Time</span>
+              {% else %}
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning">Contract</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if emp.emp_type == 'full_time' %}
+                <span class="fw-semibold">₹{{ "{:,.0f}".format(emp.base_pay | float) }}</span>
+                <span class="text-muted small">/mo (HRA {{ emp.extra1 }}%, DA {{ emp.extra2 }}%)</span>
+              {% elif emp.emp_type == 'part_time' %}
+                <span class="fw-semibold">₹{{ emp.extra1 }}/hr</span>
+                <span class="text-muted small">× {{ emp.extra2 }} hrs (1.5x OT)</span>
+              {% else %}
+                <span class="fw-semibold">₹{{ "{:,.0f}".format(emp.extra1 | float) }}</span>
+                <span class="text-muted small">project fee (-10% TDS)</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <a href="/employees/{{ emp.emp_id }}/edit" class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form action="/employees/{{ emp.emp_id }}/delete" method="POST" class="d-inline"
+                    onsubmit="return confirm('Delete {{ emp.name }} ({{ emp.emp_id }})?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-people fs-1 d-block mb-2 text-secondary"></i>
+      <p class="mb-2">No employees match the specified filters.</p>
+      <a href="/employees" class="btn btn-sm btn-outline-primary">Reset Filters</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Pagination Footer -->
+  {% if total_pages > 1 %}
+  <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+    <div class="small text-muted">
+      Page {{ page }} of {{ total_pages }} ({{ filtered_count }} matching)
+    </div>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <!-- Prev -->
+        <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('employees', page=page-1, search=search, dept=current_dept, type=current_type, per_page=per_page) }}">
+            <i class="bi bi-chevron-left"></i> Prev
+          </a>
+        </li>
+
+        <!-- Page numbers (showing nearest window) -->
+        {% set start_page = [1, page - 2] | max %}
+        {% set end_page = [total_pages, page + 2] | min %}
+        {% if start_page > 1 %}
+          <li class="page-item"><a class="page-link" href="{{ url_for('employees', page=1, search=search, dept=current_dept, type=current_type, per_page=per_page) }}">1</a></li>
+          {% if start_page > 2 %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endif %}
+
+        {% for p in range(start_page, end_page + 1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('employees', page=p, search=search, dept=current_dept, type=current_type, per_page=per_page) }}">{{ p }}</a>
+        </li>
+        {% endfor %}
+
+        {% if end_page < total_pages %}
+          {% if end_page < total_pages - 1 %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+          <li class="page-item"><a class="page-link" href="{{ url_for('employees', page=total_pages, search=search, dept=current_dept, type=current_type, per_page=per_page) }}">{{ total_pages }}</a></li>
+        {% endif %}
+
+        <!-- Next -->
+        <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+          <a class="page-link" href="{{ url_for('employees', page=page+1, search=search, dept=current_dept, type=current_type, per_page=per_page) }}">
+            Next <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
